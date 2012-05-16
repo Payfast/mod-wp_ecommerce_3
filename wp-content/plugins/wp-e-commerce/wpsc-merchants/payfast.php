@@ -1,11 +1,15 @@
 <?php
-/**
- * payfast.php
- *
- * Copyright (c) 2010-2011 PayFast (Pty) Ltd
- *
- * LICENSE:
- * 
+/*
+  Plugin Name: payfast.php
+  Plugin URI: www.payfast.co.za
+  Description: This plugin enables WP e-Commerce to interact with the Payfast payment gateway
+  Version: 1.31
+  Author: Jonathan Smit
+  License: GPL3
+   
+  Copyright (c) 2010-2011 PayFast (Pty) Ltd
+ */
+ /** 
  * This payment module is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published
  * by the Free Software Foundation; either version 3 of the License, or (at
@@ -17,7 +21,7 @@
  * License for more details.
  * 
  * @author     Jonathan Smit
- * @copyright  2010-2011 PayFast (Pty) Ltd
+ * @copyright  2010-2012 PayFast (Pty) Ltd
  * @license    http://www.opensource.org/licenses/lgpl-license.php LGPL
  * @link       http://www.payfast.co.za/help/wp_e-commerce
  */
@@ -558,7 +562,7 @@ function form_payfast()
     $options['pending_status'] = ( get_option( 'payfast_pending_status' ) != '' ) ?
         get_option( 'payfast_pending_status' ) : 1;
     $options['complete_status'] = ( get_option( 'payfast_complete_status' ) != '' ) ?
-        get_option( 'payfast_complete_status' ) : 2;
+        get_option( 'payfast_complete_status' ) : 3;
 
     $options['debug'] = ( (int)get_option( 'payfast_debug' ) != '' ) ?
         get_option( 'payfast_debug' ) : 0;

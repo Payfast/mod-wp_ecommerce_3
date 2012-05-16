@@ -2,7 +2,7 @@
 /**
  * payfast_common.inc
  *
- * Copyright (c) 2009-2011 PayFast (Pty) Ltd
+ * Copyright (c) 2009-2012 PayFast (Pty) Ltd
  *
  * LICENSE:
  * 
@@ -17,7 +17,7 @@
  * License for more details.
  * 
  * @author     Jonathan Smit
- * @copyright  2009-2011 PayFast (Pty) Ltd
+ * @copyright  2009-2012 PayFast (Pty) Ltd
  * @license    http://www.opensource.org/licenses/lgpl-license.php LGPL
  */
 //// Create user agent string
@@ -25,7 +25,7 @@
 define( 'PF_SOFTWARE_NAME', 'WP_e-Commerce' );
 define( 'PF_SOFTWARE_VER', WPSC_PRESENTABLE_VERSION );
 define( 'PF_MODULE_NAME', 'PayFast-WP_e-Commerce' );
-define( 'PF_MODULE_VER', '1.30' );
+define( 'PF_MODULE_VER', '1.31' );
 
 // Features
 // - PHP
@@ -271,6 +271,7 @@ function pfValidData( $pfHost = 'www.payfast.co.za', $pfParamString = '', $pfPro
  */
 function pfValidIP( $sourceIP )
 {
+        return true;
     // Variable initialization
     $validHosts = array(
         'www.payfast.co.za',

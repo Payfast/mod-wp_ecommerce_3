@@ -1,6 +1,6 @@
-PayFast WP e-Commerce v3 Module v1.30 for WP e-Commerce v3.8.3
+PayFast WP e-Commerce v3 Module v1.31 for WP e-Commerce v3.8.8
 --------------------------------------------------------------
-Copyright © 2010-2011 PayFast (Pty) Ltd
+Copyright © 2010-2012 PayFast (Pty) Ltd
 
 LICENSE:
  
