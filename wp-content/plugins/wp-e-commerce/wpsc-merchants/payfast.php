@@ -3,7 +3,7 @@
   Plugin Name: payfast.php
   Plugin URI: www.payfast.co.za
   Description: This plugin enables WP e-Commerce to interact with the Payfast payment gateway
-  Version: 1.31
+  Version: 1.4.0
   Author: Jonathan Smit
   License: GPL3
    
@@ -365,11 +365,13 @@ function nzshpcrt_payfast_itn()
                     pflog( '- Complete' );
 
                     // Update the purchase status
-                    $wpdb->query(
-                        "UPDATE `". WPSC_TABLE_PURCHASE_LOGS ."`
-                        SET `processed` = ". get_option( 'payfast_complete_status') ."
-                        WHERE `sessionid` = ". $sessionid ."
-                        LIMIT 1" );
+					$data = array(
+						'processed' => get_option( 'payfast_complete_status'),
+						'transactid' => $transaction_id,
+						'date' => time(),
+					);
+
+					wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
         			transaction_results( $sessionid, false, $transaction_id );
 
                     if( PF_DEBUG )
