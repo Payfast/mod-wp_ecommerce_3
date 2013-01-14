@@ -271,7 +271,7 @@ function pfValidData( $pfHost = 'www.payfast.co.za', $pfParamString = '', $pfPro
  */
 function pfValidIP( $sourceIP )
 {
-        return true;
+    
     // Variable initialization
     $validHosts = array(
         'www.payfast.co.za',
