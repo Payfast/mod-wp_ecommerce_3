@@ -3,7 +3,7 @@
   Plugin Name: payfast.php
   Plugin URI: www.payfast.co.za
   Description: This plugin enables WP e-Commerce to interact with the Payfast payment gateway
-  Version: 1.4.0
+  Version: 1.5.0
   Author: Jonathan Smit
   License: GPL3
    
@@ -373,9 +373,8 @@ function nzshpcrt_payfast_itn()
 
 					wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
         			transaction_results( $sessionid, false, $transaction_id );
-
-                    if( PF_DEBUG )
-                    {
+                    $admin_email = get_settings('admin_email');
+                    
                         $subject = "PayFast ITN on your site";
                         $body =
                             "Hi,\n\n".
@@ -386,6 +385,13 @@ function nzshpcrt_payfast_itn()
                             "PayFast Transaction ID: ". $pfData['pf_payment_id'] ."\n".
                             "PayFast Payment Status: ". $pfData['payment_status'] ."\n".
                             "Order Status Code: ". $d['order_status'];
+                            
+                    if(get_option('payfast_email_admin_on_success') == 1)
+                    {
+                        mail( get_option('payfast_success_email'), $subject, $body );
+                    }
+                    if( PF_DEBUG )
+                    {
                         mail( $pfDebugEmail, $subject, $body );
                     }
                     break;
@@ -532,6 +538,12 @@ function submit_payfast()
 
     if( isset( $_POST['payfast_debug_email'] ) )
         update_option( 'payfast_debug_email', $_POST['payfast_debug_email'] );
+        
+     if( isset( $_POST['payfast_success_email'] ) )
+        update_option( 'payfast_success_email', $_POST['payfast_success_email'] );
+        
+    if( isset( $_POST['payfast_email_admin_on_success'] ) )
+        update_option( 'payfast_email_admin_on_success', $_POST['payfast_email_admin_on_success'] );    
 
     foreach( (array)$_POST['payfast_form'] as $form => $value )
         update_option( ( 'payfast_form_'.$form ), $value );
@@ -569,7 +581,13 @@ function form_payfast()
     $options['debug'] = ( (int)get_option( 'payfast_debug' ) != '' ) ?
         get_option( 'payfast_debug' ) : 0;
     $options['debug_email'] = ( get_option( 'payfast_debug_email' ) != '' ) ?
-        get_option( 'payfast_debug_email' ) : '';
+        get_option( 'payfast_debug_email' ) : get_settings('admin_email');
+        
+    $options['email_admin_on_success'] = ( get_option( 'payfast_email_admin_on_success' ) != '' ) ?
+        get_option( 'payfast_email_admin_on_success' ) : 1;
+          
+    $options['success_email'] = ( get_option( 'payfast_success_email' ) != '' ) ?
+        get_option( 'payfast_success_email' ) : get_settings('admin_email');
 
     $options['form_name_first'] = ( get_option( 'payfast_form_name_first' ) != '' ) ?
         get_option( 'payfast_form_name_first' ) : 2;
@@ -637,6 +655,17 @@ function form_payfast()
     $output .= '
             </select>
           </td>
+        </tr>
+        <tr>
+        <td>Send Email on Payment Success:</td>
+        <td> <input type="radio" value="1" name="payfast_email_admin_on_success" id="email_admin_on_success1" '. ( $options['email_admin_on_success'] == 1 ? 'checked' : '' ) .' />
+              <label for="email_admin_on_success1">On</label>&nbsp;
+            <input type="radio" value="0" name="payfast_email_admin_on_success" id="email_admin_on_success2" '. ( $options['email_admin_on_success'] == 0 ? 'checked' : '' ) .' />
+              <label for="email_admin_on_success2">Off</label></td>
+        </tr>
+        <tr>
+           <td>Payment Success Email:</td>
+           <td> <input type="text" size="40" name="payfast_success_email" value="'. $options['success_email'] .'" /></td>
         </tr>
         <tr>
           <td>Debugging:</td>
