@@ -199,7 +199,7 @@ function gateway_payfast( $sep, $sessionid )
     $pfOutput = substr( $pfOutput, 0, -1 );
 
     // Display debugging information (if in debug mode)
-	if( PF_DEBUG || ( defined( 'WPSC_ADD_DEBUG_PAGE' ) && ( WPSC_ADD_DEBUG_PAGE == true ) ) )
+	if( get_option('payfast_server') != 'LIVE' )
     {
       	echo "<a href='". $payfast_url ."?". $pfOutput ."'>Test the URL here</a>";
       	echo "<pre>". print_r( $data, true ) ."</pre>";
