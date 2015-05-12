@@ -37,7 +37,7 @@ $nzshpcrt_gateways[$num]['supported_currencies']['currency_list'] = array( 'ZAR'
 $nzshpcrt_gateways[$num]['supported_currencies']['option_name'] = 'payfast_currcode';
 
 // Include the PayFast common file
-define( 'PF_DEBUG', ( get_option('payfast_debug') == 1  ? true : false ) );
+//define( 'PF_DEBUG', ( get_option('payfast_debug') == 1  ? true : false ) );
 require_once( 'payfast_common.inc' );
 
 // {{{ gateway_payfast()
@@ -68,8 +68,8 @@ function gateway_payfast( $sep, $sessionid )
 
     if( $purchase['totalprice'] == 0 )
     {
-    	header( "Location: ". get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid );
-    	exit();
+        header( "Location: ". get_option( 'transact_url' ) . $sep ."sessionid=". $sessionid );
+        exit();
     }
 
     // Get cart contents
@@ -90,22 +90,22 @@ function gateway_payfast( $sep, $sessionid )
 
     // Set default currency
     if( $pf_curr_code == '' )
-    	$pf_curr_code = 'ZAR';
+        $pf_curr_code = 'ZAR';
 
     // Convert from the currency of the users shopping cart to the currency
     // which the user has specified in their payfast preferences.
     $curr = new CURRENCYCONVERTER();
 
-	$total = $wpsc_cart->calculate_total_price();
-	$discount = $wpsc_cart->coupons_amount;
+    $total = $wpsc_cart->calculate_total_price();
+    $discount = $wpsc_cart->coupons_amount;
 
-	// If PayFast currency differs from local currency
+    // If PayFast currency differs from local currency
     if( $pf_curr_code != $local_curr_code )
     {
         pflog( 'Currency conversion required' );
         $pfAmount = $curr->convert( $total, $pf_curr_code, $local_curr_code );
-	}
-	// Else, if currencies are the same
+    }
+    // Else, if currencies are the same
     else
     {
         pflog( 'NO Currency conversion required' );
@@ -129,7 +129,7 @@ function gateway_payfast( $sep, $sessionid )
             $pfDescription .= ' Discount = '. number_format( $discount, 2, '.', ',' ) .';';
 
         $pfDescription .= ' Total = '. number_format( $pfAmount, 2, '.', ',' );
-	}
+    }
 
     // Use appropriate merchant identifiers
     // Live
@@ -152,6 +152,24 @@ function gateway_payfast( $sep, $sessionid )
     $cancelUrl = get_option( 'transact_url' );
     $notifyUrl = get_option( 'siteurl' ) .'/?itn_request=true';
 
+    // Create Buyer details
+    if( !empty( $_POST['collected_data'][get_option('payfast_form_name_first')] ) )
+        $name_first = $_POST['collected_data'][get_option('payfast_form_name_first')];
+
+    if( !empty( $_POST['collected_data'][get_option('payfast_form_name_last')] ) )
+        $name_last = $_POST['collected_data'][get_option('payfast_form_name_last')];
+
+    $email_data = $wpdb->get_results(
+        "SELECT `id`, `type`
+        FROM `".WPSC_TABLE_CHECKOUT_FORMS."`
+        WHERE `type` IN ('email') AND `active` = '1'", ARRAY_A );
+
+    foreach( (array)$email_data as $email )
+        $email_address = $_POST['collected_data'][$email['id']];
+
+    if( !empty( $_POST['collected_data'][get_option('email_form_field')] ) && ( $data['email'] == null ) )
+        $email_address = $_POST['collected_data'][get_option('email_form_field')];
+
     // Construct variables for post
     $data = array(
         // Merchant details
@@ -161,50 +179,66 @@ function gateway_payfast( $sep, $sessionid )
         'cancel_url' => $cancelUrl,
         'notify_url' => $notifyUrl,
 
+        // Buyer details
+        'name_first' => $name_first,
+        'name_last' => $name_last,
+        'email_address' => $email_address,
+
         // Item details
-    	'item_name' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
-    	'item_description' => $pfDescription,
-    	'amount' => number_format( sprintf( "%01.2f", $pfAmount ), 2, '.', '' ),
         'm_payment_id' => $purchase['id'],
-        'currency_code' => $pf_curr_code,
+        'amount' => number_format( sprintf( "%01.2f", $pfAmount ), 2, '.', '' ),
+        'item_name' => get_option( 'blogname' ) .' purchase, Order #'. $purchase['id'],
+        'item_description' => $pfDescription,
+
         'custom_str1' => $sessionid,
+    );
+
+    // Create Sandbox Parameter String
+    if ( get_option('payfast_server') != 'LIVE' || !isset( $passphrase ) )
+    {
+        foreach( $data as $key => $val )
+        {
+            $pfOutput .= $key . '=' . urlencode($val) . '&';
+        }
+        // Remove last ampersand
+        $pfOutput = substr( $pfOutput, 0, -1 );
+    }
+
+    // Create Live Parameter String
+    if ( get_option('payfast_server') == 'LIVE' || isset( $passphrase ) )
+    {
+        foreach ( $data as $key => $val )
+        {
+            $output .= $key . '=' . urlencode(trim($val)) . '&';
+        }
         
-        // Other details
-        'user_agent' => PF_USER_AGENT,
-        );
+        $passPhrase =  get_option( 'payfast_passphrase' );
+        if( empty( $passPhrase ) || get_option('payfast_server') != 'LIVE' )
+        {
+            $output = substr( $output, 0, -1 );
+        }
+        else
+        {
+            $output = $output."passphrase=".urlencode( $passPhrase );
+        }
 
-    // Buyer details
-    if( !empty( $_POST['collected_data'][get_option('payfast_form_name_first')] ) )
-        $data['name_first'] = $_POST['collected_data'][get_option('payfast_form_name_first')];
+        $data['signature'] = md5( $output );
 
-    if( !empty( $_POST['collected_data'][get_option('payfast_form_name_last')] ) )
-        $data['name_last'] = $_POST['collected_data'][get_option('payfast_form_name_last')];
-
-    $email_data = $wpdb->get_results(
-        "SELECT `id`, `type`
-        FROM `".WPSC_TABLE_CHECKOUT_FORMS."`
-        WHERE `type` IN ('email') AND `active` = '1'", ARRAY_A );
-
-    foreach( (array)$email_data as $email )
-    	$data['email_address'] = $_POST['collected_data'][$email['id']];
-
-    if( !empty( $_POST['collected_data'][get_option('email_form_field')] ) && ( $data['email'] == null ) )
-    	$data['email_address'] = $_POST['collected_data'][get_option('email_form_field')];
-
-    // Create output string
-    foreach( $data as $key => $val )
-        $pfOutput .= $key .'='. urlencode( $val ) .'&';
-
-    // Remove last ampersand
-    $pfOutput = substr( $pfOutput, 0, -1 );
+        foreach( $data as $key => $val )
+        {
+            $pfOutput .= $key . '=' . urlencode($val) . '&';
+        }
+        // Remove last ampersand
+        $pfOutput = substr( $pfOutput, 0, -1 );
+    }
 
     // Display debugging information (if in debug mode)
-	if( get_option('payfast_server') != 'LIVE' )
+    if( get_option('payfast_server') != 'LIVE' )
     {
-      	echo "<a href='". $payfast_url ."?". $pfOutput ."'>Test the URL here</a>";
-      	echo "<pre>". print_r( $data, true ) ."</pre>";
-      	exit();
-	}
+        echo "<a href='". $payfast_url ."?". $pfOutput ."'>Test the URL here</a>";
+        echo "<pre>". print_r( $data, true ) ."</pre>";
+        exit();
+    }
 
     // Send to PayFast (GET)
     header( "Location: ". $payfast_url ."?". $pfOutput );
@@ -359,20 +393,20 @@ function nzshpcrt_payfast_itn()
             $vendor_name = get_option( 'blogname');
             $vendor_url = get_option( 'siteurl');
 
-    		switch( $pfData['payment_status'] )
+            switch( $pfData['payment_status'] )
             {
                 case 'COMPLETE':
                     pflog( '- Complete' );
 
                     // Update the purchase status
-					$data = array(
-						'processed' => get_option( 'payfast_complete_status'),
-						'transactid' => $transaction_id,
-						'date' => time(),
-					);
+                    $data = array(
+                        'processed' => get_option( 'payfast_complete_status'),
+                        'transactid' => $transaction_id,
+                        'date' => time(),
+                    );
 
-					wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
-        			transaction_results( $sessionid, false, $transaction_id );
+                    wpsc_update_purchase_log_details( $sessionid, $data, 'sessionid' );
+                    transaction_results( $sessionid, false, $transaction_id );
                     $admin_email = get_settings('admin_email');
                     
                         $subject = "PayFast ITN on your site";
@@ -396,22 +430,22 @@ function nzshpcrt_payfast_itn()
                     }
                     break;
 
-    			case 'FAILED':
+                case 'FAILED':
                     pflog( '- Failed' );
 
                     // If payment fails, delete the purchase log
-        			$sql =
+                    $sql =
                         "SELECT * FROM `". WPSC_TABLE_CART_CONTENTS ."`
                         WHERE `purchaseid`='". $pfData['m_payment_id'] ."'";
-        			$cart_content = $wpdb->get_results( $sql, ARRAY_A );
-        			foreach( (array)$cart_content as $cart_item )
-        				$cart_item_variations = $wpdb->query(
+                    $cart_content = $wpdb->get_results( $sql, ARRAY_A );
+                    foreach( (array)$cart_content as $cart_item )
+                        $cart_item_variations = $wpdb->query(
                             "DELETE FROM `". WPSC_TABLE_CART_ITEM_VARIATIONS ."`
                             WHERE `cart_id` = '". $cart_item['id'] ."'", ARRAY_A );
 
                     $wpdb->query( "DELETE FROM `". WPSC_TABLE_CART_CONTENTS ."` WHERE `purchaseid`='". $pfData['m_payment_id'] ."'" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pfData['m_payment_id'] ."')" );
-        			$wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pfData['m_payment_id'] ."' LIMIT 1" );
+                    $wpdb->query( "DELETE FROM `". WPSC_TABLE_SUBMITED_FORM_DATA ."` WHERE `log_id` IN ('". $pfData['m_payment_id'] ."')" );
+                    $wpdb->query( "DELETE FROM `". WPSC_TABLE_PURCHASE_LOGS ."` WHERE `id`='". $pfData['m_payment_id'] ."' LIMIT 1" );
 
                     $subject = "PayFast ITN Transaction on your site";
                     $body =
@@ -424,23 +458,23 @@ function nzshpcrt_payfast_itn()
                         "PayFast Transaction ID: ". $pfData['pf_payment_id'] ."\n".
                         "PayFast Payment Status: ". $pfData['payment_status'];
                     mail( $pfDebugEmail, $subject, $body );
-        			break;
+                    break;
 
-    			case 'PENDING':
+                case 'PENDING':
                     pflog( '- Pending' );
 
                     // Need to wait for "Completed" before processing
-        			$sql =
+                    $sql =
                         "UPDATE `". WPSC_TABLE_PURCHASE_LOGS ."`
                         SET `transactid` = '". $transaction_id ."', `date` = '". time() ."'
                         WHERE `sessionid` = ". $sessionid ."
                         LIMIT 1";
-        			$wpdb->query($sql) ;
-        			break;
+                    $wpdb->query($sql) ;
+                    break;
 
-    			default:
+                default:
                     // If unknown status, do nothing (safest course of action)
-    			break;
+                break;
             }
         }
 
@@ -499,8 +533,8 @@ function nzshpcrt_payfast_itn()
 
         // Close log
         pflog( '', true );
-    	exit();
-   	}
+        exit();
+    }
 }
 // }}}
 // {{{ submit_payfast()
@@ -521,6 +555,9 @@ function submit_payfast()
 
     if( isset( $_POST['payfast_merchant_key'] ) )
         update_option( 'payfast_merchant_key', $_POST['payfast_merchant_key'] );
+
+    if( isset( $_POST['payfast_passphrase'] ) )
+        update_option( 'payfast_passphrase', $_POST['payfast_passphrase'] );
 
     if( isset( $_POST['payfast_currcode'] ) && !empty( $_POST['payfast_currcode'] ) )
         update_option( 'payfast_currcode', $_POST['payfast_currcode'] );
@@ -573,6 +610,9 @@ function form_payfast()
     $options['merchant_key'] = ( get_option( 'payfast_merchant_key' ) != '' ) ?
         get_option( 'payfast_merchant_key' ) : '46f0cd694581a';
 
+    $options['passphrase'] = ( get_option( 'payfast_passphrase' ) != '' ) ?
+        get_option( 'payfast_passphrase' ) : '';
+
     $options['pending_status'] = ( get_option( 'payfast_pending_status' ) != '' ) ?
         get_option( 'payfast_pending_status' ) : 1;
     $options['complete_status'] = ( get_option( 'payfast_complete_status' ) != '' ) ?
@@ -597,13 +637,13 @@ function form_payfast()
     // Generate output
     $output = '
         <tr>
-      	  <td colspan="2">
-      	    <span  class="wpscsmall description">
+          <td colspan="2">
+            <span  class="wpscsmall description">
             Please <a href="https://www.payfast.co.za/user/register" target="_blank">register</a> on
             <a href="https://www.payfast.co.za" target="_blank">PayFast</a> to use this module.
             Your <em>Merchant ID</em> and <em>Merchant Key</em> are available on your
             <a href="http://www.payfast.co.za/acc/integration" target="_blank">Integration page</a> on the PayFast website.</span>
-      	  </td>
+          </td>
         </tr>
         <tr>
           <td>Server:</td>
@@ -625,7 +665,14 @@ function form_payfast()
           <td>
             <input type="text" size="40" value="'. $options['merchant_key'] .'" name="payfast_merchant_key" /> <br />
           </td>
-        </tr>'."\n";
+        </tr>
+        <tr>
+          <td>Passphrase:</td>
+          <td>
+            <input type="text" size="40" value="'. $options['passphrase'] .'" name="payfast_passphrase" />
+          </td>
+        </tr>
+'."\n";
 
     // Get list of purchase statuses
     global $wpsc_purchlog_statuses;
@@ -698,9 +745,9 @@ function form_payfast()
         $current_curr = $store_curr_data['code'];
     }
 
-	if( $current_curr != $store_curr_data['code'] )
+    if( $current_curr != $store_curr_data['code'] )
     {
-		$output .= '
+        $output .= '
             <tr>
                 <td colspan="2"><br></td>
             </tr>
@@ -708,7 +755,7 @@ function form_payfast()
                 <td colspan="2"><strong class="form_group">Currency Converter</td>
             </tr>
             <tr>
-        		<td colspan="2">Your website uses <strong>'. $store_curr_data['currency'] .'</strong>.
+                <td colspan="2">Your website uses <strong>'. $store_curr_data['currency'] .'</strong>.
                     This currency is not supported by PayFast, please select a currency using the drop
                     down menu below. Buyers on your site will still pay in your local currency however
                     we will send the order through to PayFast using the currency below:</td>
@@ -718,39 +765,39 @@ function form_payfast()
                 <td>
                     <select name="payfast_currcode">';
 
-		$pf_curr_list = $wpsc_gateways['payfast']['supported_currencies']['currency_list'];
+        $pf_curr_list = $wpsc_gateways['payfast']['supported_currencies']['currency_list'];
 
         $sql =
             "SELECT DISTINCT `code`, `currency`
             FROM `". WPSC_TABLE_CURRENCY_LIST ."`
             WHERE `code` IN ('". implode( "','", $pf_curr_list )."')";
-		$curr_list = $wpdb->get_results( $sql, ARRAY_A );
+        $curr_list = $wpdb->get_results( $sql, ARRAY_A );
 
-		foreach( $curr_list as $curr_item )
+        foreach( $curr_list as $curr_item )
         {
-			$output .= "<option value='". $curr_item['code'] ."' ".
+            $output .= "<option value='". $curr_item['code'] ."' ".
                 ( $current_curr == $curr_item['code'] ? 'selected' : '' ) .">". $curr_item['currency'] ."</option>";
-		}
+        }
 
         $output .=
             '   </select>
                 </td>
             </tr>';
-	}
+    }
 
     $output .= '
         <tr class="update_gateway" >
-        	<td colspan="2">
-        		<div class="submit">
-        		<input type="submit" value="'. TXT_WPSC_UPDATE_BUTTON .'" name="updateoption"/>
-        	</div>
-        	</td>
+            <td colspan="2">
+                <div class="submit">
+                <input type="submit" value="'. TXT_WPSC_UPDATE_BUTTON .'" name="updateoption"/>
+            </div>
+            </td>
         </tr>
 
         <tr class="firstrowth">
-        	<td style="border-bottom: medium none;" colspan="2">
-        		<strong class="form_group">Fields Sent to PayFast</strong>
-        	</td>
+            <td style="border-bottom: medium none;" colspan="2">
+                <strong class="form_group">Fields Sent to PayFast</strong>
+            </td>
         </tr>
 
         <tr>

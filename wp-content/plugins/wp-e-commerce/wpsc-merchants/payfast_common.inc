@@ -145,12 +145,12 @@ function pfGetData()
  * 
  * @author Jonathan Smit
  */
-function pfValidSignature( $pfData = null, &$pfParamString = null )
+function pfValidSignature( $pfData = null, &$pfParamString = null, $pfPassphrase=null )
 {
     // Dump the submitted variables and calculate security signature
     foreach( $pfData as $key => $val )
     {
-    	if( $key != 'signature' )
+        if( $key != 'signature' )
         {
             $pfParamString .= $key .'='. urlencode( $val ) .'&';
         }
@@ -162,7 +162,17 @@ function pfValidSignature( $pfData = null, &$pfParamString = null )
 
     // Remove the last '&' from the parameter string
     $pfParamString = substr( $pfParamString, 0, -1 );
-    $signature = md5( $pfParamString );
+
+    if( is_null( $pfPassphrase ) || get_option('payfast_server') != 'live' )
+    {
+        $tempParamString = $pfParamString;
+    }
+    else
+    {
+        $tempParamString = $pfParamString."&passphrase=".urlencode( $pfPassphrase );
+    }
+
+    $signature = md5( $tempParamString );
     
     $result = ( $pfData['signature'] == $signature );
 
@@ -224,7 +234,7 @@ function pfValidData( $pfHost = 'www.payfast.co.za', $pfParamString = '', $pfPro
          
         // Construct Header
         $header = "POST /eng/query/validate HTTP/1.0\r\n";
-       	$header .= "Host: ". $pfHost ."\r\n";
+        $header .= "Host: ". $pfHost ."\r\n";
         $header .= "User-Agent: ". PF_USER_AGENT ."\r\n";
         $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
         $header .= "Content-Length: " . strlen( $pfParamString ) . "\r\n\r\n";
