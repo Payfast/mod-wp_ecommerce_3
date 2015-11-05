@@ -223,6 +223,7 @@ function gateway_payfast( $sep, $sessionid )
         }
 
         $data['signature'] = md5( $output );
+        $data['user_agent'] = 'WPEcommerce 3.x';
 
         foreach( $data as $key => $val )
         {
