@@ -311,7 +311,8 @@ function nzshpcrt_payfast_itn()
             pflog( 'Verify security signature' );
         
             // If signature different, log for debugging
-            if( !pfValidSignature( $pfData, $pfParamString ) )
+            $passPhrase =  get_option( 'payfast_passphrase' );
+            if( !pfValidSignature( $pfData, $pfParamString, $passPhrase ) )
             {
                 $pfError = true;
                 $pfErrMsg = PF_ERR_INVALID_SIGNATURE;
