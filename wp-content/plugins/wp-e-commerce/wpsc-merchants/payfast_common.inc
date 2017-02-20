@@ -163,7 +163,7 @@ function pfValidSignature( $pfData = null, &$pfParamString = null, $pfPassphrase
     // Remove the last '&' from the parameter string
     $pfParamString = substr( $pfParamString, 0, -1 );
 
-    if( is_null( $pfPassphrase ) || get_option('payfast_server') != 'live' )
+    if( is_null( $pfPassphrase ) || get_option('payfast_server') != 'LIVE' )
     {
         $tempParamString = $pfParamString;
     }
