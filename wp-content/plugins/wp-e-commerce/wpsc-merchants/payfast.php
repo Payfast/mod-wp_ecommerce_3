@@ -151,6 +151,11 @@ function gateway_payfast( $sep, $sessionid )
     if( !empty( $_POST['collected_data'][get_option('email_form_field')] ) && ( $data['email'] == null ) )
         $email_address = $_POST['collected_data'][get_option('email_form_field')];
 
+    if( strlen( $pfDescription ) > 255 )
+    {
+        $pfDescription = substr( $pfDescription, 0, 255 ); 
+    }
+
     // Construct variables for post
     $data = array(
         // Merchant details
