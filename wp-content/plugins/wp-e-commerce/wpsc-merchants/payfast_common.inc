@@ -9,7 +9,7 @@
 define( 'PF_SOFTWARE_NAME', 'WP_e-Commerce' );
 define( 'PF_SOFTWARE_VER', WPSC_PRESENTABLE_VERSION );
 define( 'PF_MODULE_NAME', 'PayFast-WP_e-Commerce' );
-define( 'PF_MODULE_VER', '1.31' );
+define( 'PF_MODULE_VER', '1.5.4' );
 
 // Features
 // - PHP
