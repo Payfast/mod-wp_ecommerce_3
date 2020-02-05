@@ -210,13 +210,6 @@ function gateway_payfast( $sep, $sessionid )
 
         $data['signature'] = md5( $output );
         $data['user_agent'] = 'WPEcommerce 3.x';
-
-        foreach( $data as $key => $val )
-        {
-            $pfOutput .= $key . '=' . urlencode($val) . '&';
-        }
-        // Remove last ampersand
-        $pfOutput = substr( $pfOutput, 0, -1 );
     }
 
     // Display debugging information (if in debug mode)
@@ -302,18 +295,6 @@ function nzshpcrt_payfast_itn()
             {
                 $pfError = true;
                 $pfErrMsg = PF_ERR_INVALID_SIGNATURE;
-            }
-        }
-
-        //// Verify source IP (If not in debug mode)
-        if( !$pfError && !$pfDone && !PF_DEBUG )
-        {
-            pflog( 'Verify source IP' );
-        
-            if( !pfValidIP( $_SERVER['REMOTE_ADDR'] ) )
-            {
-                $pfError = true;
-                $pfErrMsg = PF_ERR_BAD_SOURCE_IP;
             }
         }
 
@@ -623,9 +604,10 @@ function form_payfast()
         get_option( 'payfast_form_name_last' ) : 3;
 
     // Generate output
-    $output = '
-        <tr>
-          <td colspan="2">
+$output = '
+    <div>
+            <img src="../wp-content/plugins/wp-e-commerce/wpsc-merchants/logo.png">
+            <br> <br>
             <span  class="wpscsmall description">
             Please <a href="https://www.payfast.co.za/user/register" target="_blank">register</a> on
             <a href="https://www.payfast.co.za" target="_blank">PayFast</a> to use this module.
@@ -634,33 +616,35 @@ function form_payfast()
           </td>
         </tr>
         <tr>
-          <td>Server:</td>
+          <td>Mode:</td>
           <td>
-            <input type="radio" value="LIVE" name="payfast_server" id="payfast_server1" '. ( $options['server'] == 'LIVE' ? 'checked' : '' ) .' />
+            <input type="radio" value="LIVE" name="payfast_server" id="payfast_server1" ' . ($options['server'] == 'LIVE' ? 'checked' : '') . ' />
               <label for="payfast_server1">Live</label>&nbsp;
-            <input type="radio" value="TEST" name="payfast_server" id="payfast_server2" '. ( $options['server'] == 'TEST' ? 'checked' : '' ) .' />
+            <input type="radio" value="TEST" name="payfast_server" id="payfast_server2" ' . ($options['server'] == 'TEST' ? 'checked' : '') . ' />
               <label for="payfast_server2">Test</label>
          </td>
         </tr>
         <tr>
           <td>Merchant ID:</td>
           <td>
-            <input type="text" size="40" value="'. $options['merchant_id'] .'" name="payfast_merchant_id" />
+            <input type="text" size="40" value="' . $options['merchant_id'] . '" name="payfast_merchant_id" />
           </td>
         </tr>
         <tr>
           <td>Merchant Key:</td>
           <td>
-            <input type="text" size="40" value="'. $options['merchant_key'] .'" name="payfast_merchant_key" /> <br />
+            <input type="text" size="40" value="' . $options['merchant_key'] . '" name="payfast_merchant_key" /> <br />
           </td>
         </tr>
         <tr>
           <td>Passphrase:</td>
           <td>
-            <input type="text" size="40" value="'. $options['passphrase'] .'" name="payfast_passphrase" />
+            <input type="text" size="40" value="' . $options['passphrase'] . '" name="payfast_passphrase" />
           </td>
         </tr>
-'."\n";
+    </div>
+' . "\n";
+
 
     // Get list of purchase statuses
     global $wpsc_purchlog_statuses;
