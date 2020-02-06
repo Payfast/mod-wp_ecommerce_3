@@ -115,7 +115,7 @@ function gateway_payfast($sep, $sessionid)
     if (get_option('payfast_server') == 'LIVE') {
         $merchantId = get_option('payfast_merchant_id');
         $merchantKey = get_option('payfast_merchant_key');
-        $payfast_url = 'https://transaction.pf.thinus/eng/process';
+        $payfast_url = 'https://www.payfast.co.za/eng/process';
     }
     // Sandbox
     else {
@@ -234,7 +234,7 @@ function nzshpcrt_payfast_itn()
         $pfErrMsg = '';
         $pfDone = false;
         $pfData = array();
-        $pfHost = ((get_option('payfast_server') == 'LIVE') ? 'transaction.pf.thinus' : 'sandbox.payfast.co.za') . '';
+        $pfHost = ((get_option('payfast_server') == 'LIVE') ? 'www' : 'sandbox.payfast.co.za') . '.payfast.co.za';
         $pfOrderId = '';
         $pfParamString = '';
 
